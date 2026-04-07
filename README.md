@@ -1,18 +1,15 @@
 ---
-title: Clinical Trial Patient Screening Environment
+title: Clinical Trial Patient Screening
 emoji: 🧪
-colorFrom: teal
-colorTo: blue
+colorFrom: green
+colorTo: indigo
 sdk: docker
 pinned: false
 app_port: 8000
-base_path: /web
 tags:
   - openenv
-  - healthcare
-  - reinforcement-learning
+short_description: RL environment for clinical trial patient screening.
 ---
-
 # Clinical Trial Patient Screening Environment
 
 OpenEnv environment for clinical trial patient screening with three deterministic healthcare tasks:

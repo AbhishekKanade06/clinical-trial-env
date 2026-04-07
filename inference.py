@@ -53,11 +53,10 @@ def log_step(step: int, action: str, reward: float, done: bool, error: Optional[
     )
 
 
-def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
+def log_end(success: bool, steps: int, rewards: List[float]) -> None:
     rewards_str = ",".join(f"{reward:.2f}" for reward in rewards)
     print(
-        f"[END] success={str(success).lower()} steps={steps} "
-        f"score={score:.2f} rewards={rewards_str}",
+        f"[END] success={str(success).lower()} steps={steps} rewards={rewards_str}",
         flush=True,
     )
 
@@ -105,7 +104,11 @@ def heuristic_action(task_name: str, step: int) -> ClinicalTrialAction:
         ("hard", 1): ClinicalTrialAction(action_type="extract_data", field_name="biomarker", value="FLT3-ITD"),
         ("hard", 2): ClinicalTrialAction(
             action_type="flag_deviation",
-            deviations=["recent strong CYP3A4 inhibitor", "active uncontrolled infection"],
+            deviations=[
+                "neutropenic fever",
+                "qtc greater than 480 ms",
+                "recent strong CYP3A4 inhibitor",
+            ],
         ),
         ("hard", 3): ClinicalTrialAction(action_type="submit_decision", final_decision="ineligible"),
     }
@@ -226,7 +229,7 @@ async def main() -> None:
                 await env.close()
             except Exception as exc:
                 last_error = last_error or sanitize_error(str(exc))
-        log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
+        log_end(success=success, steps=steps_taken, rewards=rewards)
 
 
 if __name__ == "__main__":

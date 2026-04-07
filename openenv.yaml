@@ -1,7 +1,19 @@
 spec_version: 1
+version: 1.0.0
 name: clinical_trial_env
-type: space
-runtime: fastapi
-app: server.app:app
-port: 8000
-description: Clinical trial patient screening environment with easy, medium, and hard deterministic grading tasks.
+author: Abhishek-CS221006
+entry_point: env:ClinicalTrialEnv
+tasks:
+  - id: easy
+    name: Metastatic NSCLC Screening
+    difficulty: easy
+  - id: medium
+    name: Patient Protocol Ranking
+    difficulty: medium
+  - id: hard
+    name: AML Exclusion Detection
+    difficulty: hard
+tags:
+  - healthcare
+  - clinical-trials
+  - medical-nlp
