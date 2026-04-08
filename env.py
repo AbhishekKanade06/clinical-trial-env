@@ -179,7 +179,10 @@ class ClinicalTrialEnvironment(
                 for field_name, expected in truth.extracted_fields.items()
                 if _normalize(self._state.extracted_fields.get(field_name)) == _normalize(expected)
             )
-            components.append(field_hits / len(truth.extracted_fields))
+            score = field_hits / len(truth.extracted_fields)
+            # Clamp component to ensure it never hits exact 0.0 or 1.0
+            score = min(max(score, MIN_STRICT_SCORE), MAX_STRICT_SCORE)
+            components.append(score)
 
         if self._current_scenario.hidden_exclusions:
             exclusion_hits = sum(
@@ -187,7 +190,10 @@ class ClinicalTrialEnvironment(
                 for exclusion in self._current_scenario.hidden_exclusions
                 if exclusion in self._state.identified_deviations
             )
-            components.append(exclusion_hits / len(self._current_scenario.hidden_exclusions))
+            score = exclusion_hits / len(self._current_scenario.hidden_exclusions)
+            # Clamp component to ensure it never hits exact 0.0 or 1.0
+            score = min(max(score, MIN_STRICT_SCORE), MAX_STRICT_SCORE)
+            components.append(score)
 
         if truth.ranking:
             ranking = self._submitted_ranking
@@ -203,15 +209,17 @@ class ClinicalTrialEnvironment(
                         if ranking.index(higher) < ranking.index(lower):
                             pairwise_hits += 1
                 pairwise_score = pairwise_hits / max(total_pairs, 1)
-                components.append((0.6 * positional_hits) + (0.4 * pairwise_score))
+                score = (0.6 * positional_hits) + (0.4 * pairwise_score)
             else:
-                components.append(0.0)
+                score = MIN_STRICT_SCORE  # Penalize missing/incorrect ranking
+            # Clamp component to ensure it never hits exact 0.0 or 1.0
+            score = min(max(score, MIN_STRICT_SCORE), MAX_STRICT_SCORE)
+            components.append(score)
 
-        components.append(
-            1.0
-            if _normalize(self._state.final_decision) == _normalize(truth.final_decision)
-            else 0.0
-        )
+        # Final decision correctness
+        final_match = _normalize(self._state.final_decision) == _normalize(truth.final_decision)
+        score = MAX_STRICT_SCORE if final_match else MIN_STRICT_SCORE  # Already clamped
+        components.append(score)
 
         if not components:
             return MIN_STRICT_SCORE
