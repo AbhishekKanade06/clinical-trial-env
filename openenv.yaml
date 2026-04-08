@@ -7,12 +7,15 @@ tasks:
   - id: easy
     name: Metastatic NSCLC Screening
     difficulty: easy
+    grader: grade_easy_screening
   - id: medium
     name: Patient Protocol Ranking
     difficulty: medium
+    grader: grade_medium_ranking
   - id: hard
     name: AML Exclusion Detection
     difficulty: hard
+    grader: grade_hard_exclusions
 tags:
   - healthcare
   - clinical-trials

@@ -40,7 +40,7 @@
       },
       "hidden_exclusions": [],
       "max_steps": 6,
-      "grader_name": "deterministic_json_grader"
+      "grader_name": "grade_easy_screening"
     },
     "medium": {
       "difficulty": "medium",
@@ -102,7 +102,7 @@
       },
       "hidden_exclusions": [],
       "max_steps": 6,
-      "grader_name": "deterministic_json_grader"
+      "grader_name": "grade_medium_ranking"
     },
     "hard": {
       "difficulty": "hard",
@@ -137,7 +137,7 @@
         "recent strong cyp3a4 inhibitor"
       ],
       "max_steps": 6,
-      "grader_name": "deterministic_json_grader"
+      "grader_name": "grade_hard_exclusions"
     }
   }
 }

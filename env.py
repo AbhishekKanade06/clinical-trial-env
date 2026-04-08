@@ -29,6 +29,8 @@ INCREMENTAL_REWARD = 0.20
 FINAL_REWARD = 1.00
 HALLUCINATION_PENALTY = -0.50
 TASK_SEQUENCE = ["easy", "medium", "hard"]
+MIN_STRICT_SCORE = 0.01
+MAX_STRICT_SCORE = 0.99
 
 
 def _normalize(value: Optional[str]) -> str:
@@ -212,8 +214,11 @@ class ClinicalTrialEnvironment(
         )
 
         if not components:
-            return 0.0
-        return round(sum(components) / len(components), 4)
+            return MIN_STRICT_SCORE
+
+        raw_score = sum(components) / len(components)
+        strict_score = min(max(raw_score, MIN_STRICT_SCORE), MAX_STRICT_SCORE)
+        return round(strict_score, 4)
 
     def _next_task_id(self) -> str:
         self._task_cursor = (self._task_cursor + 1) % len(TASK_SEQUENCE)
@@ -326,3 +331,9 @@ class ClinicalTrialEnvironment(
             metadata={"grading_score": self._state.grading_score},
             terminal_reason=terminal_reason,
         )
+
+
+class ClinicalTrialEnv(ClinicalTrialEnvironment):
+    """Compatibility alias for manifest entry points expecting env:ClinicalTrialEnv."""
+
+    pass
