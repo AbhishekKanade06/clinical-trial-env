@@ -212,8 +212,13 @@ class ClinicalTrialEnvironment(
         )
 
         if not components:
-            return 0.0
-        return round(sum(components) / len(components), 4)
+            score = 0.5  # Return midpoint when no components
+        else:
+            score = sum(components) / len(components)
+        
+        # Clamp score to strictly between 0 and 1 (exclusive bounds required by validator)
+        score = max(0.0001, min(0.9999, score))
+        return round(score, 4)
 
     def _next_task_id(self) -> str:
         self._task_cursor = (self._task_cursor + 1) % len(TASK_SEQUENCE)
