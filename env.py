@@ -146,7 +146,7 @@ class ClinicalTrialEnvironment(
             done = True
             terminal_reason = "max_steps_reached"
 
-        reward.grader_score = self.grader()
+        reward.grader_score = self._grade_for_current_task()
         self._state.grading_score = reward.grader_score
 
         if done:
@@ -228,6 +228,29 @@ class ClinicalTrialEnvironment(
         raw_score = sum(components) / len(components)
         strict_score = min(max(raw_score, MIN_STRICT_SCORE), MAX_STRICT_SCORE)
         return round(strict_score, 4)
+
+    def grade_easy_screening(self) -> float:
+        """Task-specific grader for the easy screening task."""
+        return self.grader()
+
+    def grade_medium_ranking(self) -> float:
+        """Task-specific grader for the medium ranking task."""
+        return self.grader()
+
+    def grade_hard_exclusions(self) -> float:
+        """Task-specific grader for the hard exclusions task."""
+        return self.grader()
+
+    def _grade_for_current_task(self) -> float:
+        """Resolve and run the grader declared by the current scenario."""
+        assert self._current_scenario is not None
+        grader_name = (self._current_scenario.grader_name or "").strip()
+        grader_fn = getattr(self, grader_name, None)
+        if callable(grader_fn):
+            score = float(grader_fn())
+        else:
+            score = float(self.grader())
+        return round(min(max(score, MIN_STRICT_SCORE), MAX_STRICT_SCORE), 4)
 
     def _next_task_id(self) -> str:
         self._task_cursor = (self._task_cursor + 1) % len(TASK_SEQUENCE)
