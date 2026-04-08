@@ -1,0 +1,143 @@
+{
+  "tasks": {
+    "easy": {
+      "difficulty": "easy",
+      "title": "EGFR-Mutated Metastatic NSCLC Eligibility",
+      "instructions": "Review the structured oncology chart and determine whether the patient meets the five binary eligibility criteria for a first-line EGFR inhibitor trial. Use extract_data for clinical facts and submit_decision with eligible or ineligible.",
+      "context": {
+        "trial_protocol": {
+          "phase": "Phase III",
+          "disease": "Metastatic non-small cell lung cancer",
+          "binary_criteria": [
+            "Age >= 18 years",
+            "Pathologically confirmed metastatic NSCLC",
+            "Activating EGFR mutation present",
+            "ECOG performance status 0 or 1",
+            "No prior EGFR-targeted therapy"
+          ]
+        },
+        "patient": {
+          "patient_id": "NSCLC-204",
+          "age": 56,
+          "sex": "female",
+          "diagnosis": "Stage IV lung adenocarcinoma with pleural metastases",
+          "molecular_profile": "EGFR L858R positive; ALK negative; ROS1 negative",
+          "ecog": 1,
+          "prior_therapy": "Carboplatin/pemetrexed deferred; no prior EGFR TKI exposure",
+          "recent_mri": "No untreated brain metastases"
+        }
+      },
+      "ground_truth": {
+        "extracted_fields": {
+          "age": "56",
+          "diagnosis": "metastatic nsclc",
+          "egfr_mutation": "l858r positive",
+          "ecog": "1",
+          "prior_egfr_tki": "none"
+        },
+        "ranking": [],
+        "final_decision": "eligible"
+      },
+      "hidden_exclusions": [],
+      "max_steps": 6,
+      "grader_name": "deterministic_json_grader"
+    },
+    "medium": {
+      "difficulty": "medium",
+      "title": "Rank Patients for HER2-Positive Breast Cancer Trial",
+      "instructions": "Rank the three candidates from best to worst fit for a second-line HER2-positive metastatic breast cancer antibody-drug conjugate trial. Extract key biomarkers or performance status if useful, then submit the full ranking with rank_patients.",
+      "context": {
+        "trial_protocol": {
+          "phase": "Phase II",
+          "disease": "HER2-positive metastatic breast cancer",
+          "fit_score_drivers": [
+            "HER2 IHC 3+ or ISH amplified",
+            "Prior trastuzumab and taxane exposure required",
+            "No active CNS progression",
+            "ECOG 0-1 preferred",
+            "Adequate left ventricular ejection fraction"
+          ]
+        },
+        "patients": [
+          {
+            "patient_id": "BC-101",
+            "age": 48,
+            "her2_status": "IHC 3+",
+            "prior_therapy": "Taxane, trastuzumab, pertuzumab completed",
+            "ecog": 0,
+            "brain_mri": "Stable treated cerebellar lesion; no active CNS progression",
+            "lvef": "61%"
+          },
+          {
+            "patient_id": "BC-103",
+            "age": 62,
+            "her2_status": "ISH amplified",
+            "prior_therapy": "Taxane and trastuzumab completed; pertuzumab intolerant",
+            "ecog": 1,
+            "brain_mri": "No CNS disease",
+            "lvef": "55%"
+          },
+          {
+            "patient_id": "BC-102",
+            "age": 54,
+            "her2_status": "IHC 2+ / ISH non-amplified",
+            "prior_therapy": "Taxane only; trastuzumab naive",
+            "ecog": 2,
+            "brain_mri": "New enhancing frontal lesion on last scan",
+            "lvef": "49%"
+          }
+        ]
+      },
+      "ground_truth": {
+        "extracted_fields": {
+          "BC-101_her2_status": "ihc 3+",
+          "BC-101_ecog": "0",
+          "BC-103_her2_status": "ish amplified",
+          "BC-103_ecog": "1",
+          "BC-102_cns_status": "active cns progression",
+          "BC-102_trastuzumab_exposure": "none"
+        },
+        "ranking": ["BC-101", "BC-103", "BC-102"],
+        "final_decision": "ranking_submitted"
+      },
+      "hidden_exclusions": [],
+      "max_steps": 6,
+      "grader_name": "deterministic_json_grader"
+    },
+    "hard": {
+      "difficulty": "hard",
+      "title": "Protocol Deviations in AML Screening Note",
+      "instructions": "Read the unstructured hematology note, identify protocol deviations or exclusions, and determine if the patient is screen-failed. Use extract_data for critical facts, flag_deviation for protocol violations, then submit_decision with eligible or ineligible.",
+      "context": {
+        "trial_protocol": {
+          "phase": "Phase Ib",
+          "disease": "Relapsed/refractory FLT3-mutated AML",
+          "key_exclusions": [
+            "Neutropenic fever / active uncontrolled infection",
+            "QTc > 480 ms",
+            "Strong CYP3A4 inhibitor within 7 days"
+          ]
+        },
+        "screening_note": "Mr. J.R. is a 63-year-old man with relapsed AML harboring FLT3-ITD. He presented overnight with neutropenic fever and positive blood cultures. ECG today showed QTc 486 ms. Posaconazole prophylaxis was restarted five days ago because of prior pulmonary aspergillosis. Bone marrow confirms persistent 22% blasts. ECOG 1. Creatinine clearance 68 mL/min."
+      },
+      "ground_truth": {
+        "extracted_fields": {
+          "age": "63",
+          "biomarker": "flt3-itd",
+          "ecg_qtc_ms": "486",
+          "infection_status": "neutropenic fever",
+          "cyp3a4_inhibitor": "posaconazole within 7 days"
+        },
+        "ranking": [],
+        "final_decision": "ineligible"
+      },
+      "hidden_exclusions": [
+        "neutropenic fever",
+        "qtc greater than 480 ms",
+        "recent strong cyp3a4 inhibitor"
+      ],
+      "max_steps": 6,
+      "grader_name": "deterministic_json_grader"
+    }
+  }
+}
