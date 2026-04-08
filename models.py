@@ -21,7 +21,12 @@ class ClinicalTrialReward(BaseModel):
     final_reward: float = Field(default=0.0, description="Terminal reward for a correct final decision.")
     penalty: float = Field(default=0.0, description="Penalty for hallucinations or destructive actions.")
     total_reward: float = Field(default=0.0, description="Net reward for the step.")
-    grader_score: float = Field(default=0.0, ge=0.0, le=1.0, description="Deterministic task score.")
+    grader_score: float = Field(
+        default=0.5,
+        gt=0.0,
+        lt=1.0,
+        description="Deterministic task score in the strict open interval (0, 1).",
+    )
     matched_items: List[str] = Field(default_factory=list, description="Correctly matched items this step.")
     missing_items: List[str] = Field(default_factory=list, description="Expected items still missing at grading time.")
     notes: List[str] = Field(default_factory=list, description="Human-readable reward rationale.")
@@ -78,7 +83,12 @@ class ClinicalTrialState(State):
     extracted_fields: Dict[str, str] = Field(default_factory=dict, description="Accepted extracted fields.")
     identified_deviations: List[str] = Field(default_factory=list, description="Accepted deviations.")
     final_decision: Optional[str] = Field(default=None, description="Submitted terminal decision.")
-    grading_score: float = Field(default=0.0, ge=0.0, le=1.0, description="Latest grader output.")
+    grading_score: float = Field(
+        default=0.5,
+        gt=0.0,
+        lt=1.0,
+        description="Latest grader output in the strict open interval (0, 1).",
+    )
 
     def __call__(self) -> "ClinicalTrialState":
         """Support env.state() as a compatibility alias for the OpenEnv state property."""

@@ -100,10 +100,10 @@ class ClinicalTrialEnvironment(
             extracted_fields={},
             identified_deviations=[],
             final_decision=None,
-            grading_score=0.0,
+            grading_score=0.5,
         )
         return self._build_observation(
-            reward_details=ClinicalTrialReward(notes=["Episode reset."]),
+            reward_details=ClinicalTrialReward(notes=["Episode reset."], grader_score=0.5),
             done=False,
         )
 
@@ -146,13 +146,14 @@ class ClinicalTrialEnvironment(
             done = True
             terminal_reason = "max_steps_reached"
 
+        reward.grader_score = self.grader()
+        self._state.grading_score = reward.grader_score
+
         if done:
-            reward.grader_score = self.grader()
             if self._is_final_submission_correct():
                 reward.final_reward = FINAL_REWARD
                 reward.notes.append("Correct final screening decision.")
             reward.missing_items = self._missing_items()
-            self._state.grading_score = reward.grader_score
 
         reward.total_reward = round(
             reward.incremental_reward + reward.final_reward + reward.penalty, 4
