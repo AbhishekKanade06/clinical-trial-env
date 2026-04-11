@@ -90,6 +90,9 @@ class ClinicalTrialEnvironment(
     ) -> ClinicalTrialObservation:
         del seed, kwargs
         selected_task_id = task_id or self._next_task_id()
+        if selected_task_id not in self._scenarios:
+            available = ", ".join(sorted(self._scenarios))
+            raise ValueError(f"Unknown task_id '{selected_task_id}'. Expected one of: {available}")
         self._current_scenario = self._scenarios[selected_task_id]
         self._submitted_ranking = []
         self._state = ClinicalTrialState(
@@ -130,8 +133,8 @@ class ClinicalTrialEnvironment(
         elif action.action_type == "flag_deviation":
             self._handle_deviation_flag(action, reward)
         elif action.action_type == "rank_patients":
-            self._handle_ranking(action, reward)
-            if action.ranking:
+            ranking_accepted = self._handle_ranking(action, reward)
+            if ranking_accepted:
                 done = True
                 terminal_reason = "ranking_submitted"
         elif action.action_type == "submit_decision":
@@ -175,33 +178,44 @@ class ClinicalTrialEnvironment(
         """Deterministically compare agent outputs against the current scenario ground truth."""
         if self._current_scenario is None:
             return DEFAULT_GRADER_SCORE
+        return self._score_scenario(
+            self._current_scenario,
+            self._state,
+            self._submitted_ranking,
+        )
+
+    def _score_scenario(
+        self,
+        scenario: ScenarioSpec,
+        state: ClinicalTrialState,
+        submitted_ranking: List[str],
+    ) -> float:
+        """Deterministically compare agent outputs against the provided scenario state."""
         components: List[float] = []
-        truth = self._current_scenario.ground_truth
+        truth = scenario.ground_truth
 
         if truth.extracted_fields:
             field_hits = sum(
                 1
                 for field_name, expected in truth.extracted_fields.items()
-                if _normalize(self._state.extracted_fields.get(field_name)) == _normalize(expected)
+                if _normalize(state.extracted_fields.get(field_name)) == _normalize(expected)
             )
             score = field_hits / len(truth.extracted_fields)
-            # Clamp component to ensure it never hits exact 0.0 or 1.0
             score = min(max(score, MIN_STRICT_SCORE), MAX_STRICT_SCORE)
             components.append(score)
 
-        if self._current_scenario.hidden_exclusions:
+        if scenario.hidden_exclusions:
             exclusion_hits = sum(
                 1
-                for exclusion in self._current_scenario.hidden_exclusions
-                if exclusion in self._state.identified_deviations
+                for exclusion in scenario.hidden_exclusions
+                if exclusion in state.identified_deviations
             )
-            score = exclusion_hits / len(self._current_scenario.hidden_exclusions)
-            # Clamp component to ensure it never hits exact 0.0 or 1.0
+            score = exclusion_hits / len(scenario.hidden_exclusions)
             score = min(max(score, MIN_STRICT_SCORE), MAX_STRICT_SCORE)
             components.append(score)
 
         if truth.ranking:
-            ranking = self._submitted_ranking
+            ranking = submitted_ranking
             if ranking and len(ranking) == len(truth.ranking):
                 positional_hits = sum(
                     1 for actual, expected in zip(ranking, truth.ranking) if actual == expected
@@ -216,14 +230,15 @@ class ClinicalTrialEnvironment(
                 pairwise_score = pairwise_hits / max(total_pairs, 1)
                 score = (0.6 * positional_hits) + (0.4 * pairwise_score)
             else:
-                score = MIN_STRICT_SCORE  # Penalize missing/incorrect ranking
-            # Clamp component to ensure it never hits exact 0.0 or 1.0
+                score = DEFAULT_GRADER_SCORE
             score = min(max(score, MIN_STRICT_SCORE), MAX_STRICT_SCORE)
             components.append(score)
 
-        # Final decision correctness
-        final_match = _normalize(self._state.final_decision) == _normalize(truth.final_decision)
-        score = MAX_STRICT_SCORE if final_match else MIN_STRICT_SCORE  # Already clamped
+        if state.final_decision is None:
+            score = DEFAULT_GRADER_SCORE
+        else:
+            final_match = _normalize(state.final_decision) == _normalize(truth.final_decision)
+            score = MAX_STRICT_SCORE if final_match else MIN_STRICT_SCORE
         components.append(score)
 
         if not components:
@@ -235,21 +250,34 @@ class ClinicalTrialEnvironment(
 
     def grade_easy_screening(self) -> float:
         """Task-specific grader for the easy screening task."""
-        if self._current_scenario is None or self._current_scenario.task_id != "easy":
-            self.reset(task_id="easy")
-        return self.grader()
+        return self._grade_task_by_id("easy")
 
     def grade_medium_ranking(self) -> float:
         """Task-specific grader for the medium ranking task."""
-        if self._current_scenario is None or self._current_scenario.task_id != "medium":
-            self.reset(task_id="medium")
-        return self.grader()
+        return self._grade_task_by_id("medium")
 
     def grade_hard_exclusions(self) -> float:
         """Task-specific grader for the hard exclusions task."""
-        if self._current_scenario is None or self._current_scenario.task_id != "hard":
-            self.reset(task_id="hard")
-        return self.grader()
+        return self._grade_task_by_id("hard")
+
+    def _grade_task_by_id(self, task_id: str) -> float:
+        """Return a task grader score without mutating the environment state."""
+        scenario = self._scenarios[task_id]
+        if self._current_scenario is not None and self._current_scenario.task_id == task_id:
+            state = self._state
+            ranking = self._submitted_ranking
+        else:
+            state = ClinicalTrialState(
+                current_task_id=scenario.task_id,
+                difficulty=scenario.difficulty,
+                title=scenario.title,
+                extracted_fields={},
+                identified_deviations=[],
+                final_decision=None,
+                grading_score=DEFAULT_GRADER_SCORE,
+            )
+            ranking = []
+        return self._score_scenario(scenario, state, ranking)
 
     def _grade_for_current_task(self) -> float:
         """Resolve and run the grader declared by the current scenario."""
@@ -291,6 +319,11 @@ class ClinicalTrialEnvironment(
 
     def _handle_deviation_flag(self, action: ClinicalTrialAction, reward: ClinicalTrialReward) -> None:
         assert self._current_scenario is not None
+        if self._current_scenario.task_id != "hard":
+            reward.penalty += HALLUCINATION_PENALTY
+            reward.notes.append("Deviation flagging is only valid for the hard task.")
+            return
+
         submitted = [_normalize(item) for item in action.deviations]
         if not submitted:
             reward.penalty += HALLUCINATION_PENALTY
@@ -308,8 +341,13 @@ class ClinicalTrialEnvironment(
                 reward.penalty += HALLUCINATION_PENALTY
                 reward.notes.append(f"Unsupported deviation claim: {deviation}.")
 
-    def _handle_ranking(self, action: ClinicalTrialAction, reward: ClinicalTrialReward) -> None:
+    def _handle_ranking(self, action: ClinicalTrialAction, reward: ClinicalTrialReward) -> bool:
         assert self._current_scenario is not None
+        if self._current_scenario.task_id != "medium":
+            reward.penalty += HALLUCINATION_PENALTY
+            reward.notes.append("Ranking is only valid for the medium task.")
+            return False
+
         ranking = action.ranking
         valid_patients = [
             patient["patient_id"]
@@ -318,9 +356,10 @@ class ClinicalTrialEnvironment(
         if sorted(ranking) != sorted(valid_patients):
             reward.penalty += HALLUCINATION_PENALTY
             reward.notes.append("Ranking must include each patient exactly once.")
-            return
+            return False
         self._submitted_ranking = ranking
         self._state.final_decision = "ranking_submitted"
+        return True
 
     def _is_final_submission_correct(self) -> bool:
         assert self._current_scenario is not None
