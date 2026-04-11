@@ -6,8 +6,8 @@
 
 """Clinical Trial screening environment."""
 
-from .client import ClinicalTrialEnv
-from .env import ClinicalTrialEnvironment
+from .client import ClinicalTrialEnv as ClinicalTrialEnvClient
+from .env import ClinicalTrialEnv, ClinicalTrialEnvironment
 from .models import (
     ClinicalTrialAction,
     ClinicalTrialObservation,
@@ -22,4 +22,5 @@ __all__ = [
     "ClinicalTrialState",
     "ClinicalTrialEnvironment",
     "ClinicalTrialEnv",
+    "ClinicalTrialEnvClient",
 ]

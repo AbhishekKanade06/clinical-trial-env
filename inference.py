@@ -11,9 +11,9 @@ from typing import Dict, List, Optional, Tuple
 from openai import OpenAI
 
 try:
-    from clinical_trial_env import ClinicalTrialAction, ClinicalTrialEnv
+    from clinical_trial_env import ClinicalTrialAction, ClinicalTrialEnvClient
 except ImportError:
-    from client import ClinicalTrialEnv
+    from client import ClinicalTrialEnv as ClinicalTrialEnvClient
     from models import ClinicalTrialAction
 
 LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME") or os.getenv("IMAGE_NAME")
@@ -159,11 +159,11 @@ def format_action(action: ClinicalTrialAction) -> str:
     return json.dumps(payload, separators=(",", ":"), sort_keys=True)
 
 
-async def create_env() -> ClinicalTrialEnv:
+async def create_env() -> ClinicalTrialEnvClient:
     if LOCAL_IMAGE_NAME:
-        return await ClinicalTrialEnv.from_docker_image(LOCAL_IMAGE_NAME)
+        return await ClinicalTrialEnvClient.from_docker_image(LOCAL_IMAGE_NAME)
     if ENV_BASE_URL:
-        env = ClinicalTrialEnv(base_url=ENV_BASE_URL)
+        env = ClinicalTrialEnvClient(base_url=ENV_BASE_URL)
         await env.connect()
         return env
     raise RuntimeError("Set LOCAL_IMAGE_NAME for Docker execution or ENV_BASE_URL for an existing server.")
@@ -171,7 +171,7 @@ async def create_env() -> ClinicalTrialEnv:
 
 async def main() -> None:
     client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
-    env: Optional[ClinicalTrialEnv] = None
+    env: Optional[ClinicalTrialEnvClient] = None
     rewards: List[float] = []
     steps_taken = 0
     score = 0.5
