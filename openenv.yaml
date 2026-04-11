@@ -2,20 +2,20 @@ spec_version: 1
 version: 1.0.0
 name: clinical_trial_env
 author: Abhishek-CS221006
-entry_point: env:ClinicalTrialEnv
+entry_point: clinical_trial_env.env:ClinicalTrialEnv
 tasks:
   - id: easy
     name: Metastatic NSCLC Screening
     difficulty: easy
-    grader: grade_easy_screening
+    grader: clinical_trial_env.env:grade_easy_screening
   - id: medium
     name: Patient Protocol Ranking
     difficulty: medium
-    grader: grade_medium_ranking
+    grader: clinical_trial_env.env:grade_medium_ranking
   - id: hard
     name: AML Exclusion Detection
     difficulty: hard
-    grader: grade_hard_exclusions
+    grader: clinical_trial_env.env:grade_hard_exclusions
 tags:
   - healthcare
   - clinical-trials
