@@ -27,6 +27,8 @@ MAX_STEPS = int(os.getenv("MAX_STEPS", "20"))
 TEMPERATURE = float(os.getenv("TEMPERATURE", "0.1"))
 MAX_TOKENS = int(os.getenv("MAX_TOKENS", "220"))
 SUCCESS_SCORE_THRESHOLD = float(os.getenv("SUCCESS_SCORE_THRESHOLD", "0.8"))
+MIN_STRICT_SCORE = 0.01
+MAX_STRICT_SCORE = 0.99
 
 SYSTEM_PROMPT = textwrap.dedent(
     """
@@ -172,7 +174,7 @@ async def main() -> None:
     env: Optional[ClinicalTrialEnv] = None
     rewards: List[float] = []
     steps_taken = 0
-    score = 0.0
+    score = 0.5
     success = False
     history: List[str] = []
     last_error: Optional[str] = None
@@ -221,7 +223,7 @@ async def main() -> None:
 
         if last_error is None and "result" in locals():
             score = float(result.observation.reward_details.grader_score)
-        score = max(0.0, min(score, 1.0))
+        score = min(max(score, MIN_STRICT_SCORE), MAX_STRICT_SCORE)
         success = last_error is None and score >= SUCCESS_SCORE_THRESHOLD
     finally:
         if env is not None:

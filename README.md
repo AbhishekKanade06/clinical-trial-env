@@ -37,7 +37,7 @@ Detect subtle exclusions from an AML screening note, including protocol deviatio
 - `+1.00` for a correct final screening decision
 - `-0.50` for hallucinated fields, invalid deviation claims, or destructive actions
 
-Each task also produces a deterministic grader score in `[0.0, 1.0]`.
+Each task also produces a deterministic grader score in `(0.0, 1.0)`.
 
 ## Project Structure
 
@@ -131,5 +131,5 @@ asyncio.run(main())
 
 - `reset()`, `step(action)`, and OpenEnv `state` access are implemented in [env.py](/Users/abhishekkanade/Desktop/Hackathon/OpenEnv/clinical_trial_env/env.py).
 - Gold answers are not exposed through observation metadata.
-- Graders are deterministic and bounded in `[0.0, 1.0]`.
+- Graders are deterministic and bounded in `(0.0, 1.0)`.
 - The hard task uses unstructured medical text and clinically realistic exclusion criteria.

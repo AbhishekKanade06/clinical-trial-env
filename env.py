@@ -31,6 +31,7 @@ HALLUCINATION_PENALTY = -0.50
 TASK_SEQUENCE = ["easy", "medium", "hard"]
 MIN_STRICT_SCORE = 0.01
 MAX_STRICT_SCORE = 0.99
+DEFAULT_GRADER_SCORE = 0.5
 
 
 def _normalize(value: Optional[str]) -> str:
@@ -100,10 +101,12 @@ class ClinicalTrialEnvironment(
             extracted_fields={},
             identified_deviations=[],
             final_decision=None,
-            grading_score=0.5,
+            grading_score=DEFAULT_GRADER_SCORE,
         )
         return self._build_observation(
-            reward_details=ClinicalTrialReward(notes=["Episode reset."], grader_score=0.5),
+            reward_details=ClinicalTrialReward(
+                notes=["Episode reset."], grader_score=DEFAULT_GRADER_SCORE
+            ),
             done=False,
         )
 
@@ -170,7 +173,8 @@ class ClinicalTrialEnvironment(
 
     def grader(self) -> float:
         """Deterministically compare agent outputs against the current scenario ground truth."""
-        assert self._current_scenario is not None
+        if self._current_scenario is None:
+            return DEFAULT_GRADER_SCORE
         components: List[float] = []
         truth = self._current_scenario.ground_truth
 
@@ -231,14 +235,20 @@ class ClinicalTrialEnvironment(
 
     def grade_easy_screening(self) -> float:
         """Task-specific grader for the easy screening task."""
+        if self._current_scenario is None or self._current_scenario.task_id != "easy":
+            self.reset(task_id="easy")
         return self.grader()
 
     def grade_medium_ranking(self) -> float:
         """Task-specific grader for the medium ranking task."""
+        if self._current_scenario is None or self._current_scenario.task_id != "medium":
+            self.reset(task_id="medium")
         return self.grader()
 
     def grade_hard_exclusions(self) -> float:
         """Task-specific grader for the hard exclusions task."""
+        if self._current_scenario is None or self._current_scenario.task_id != "hard":
+            self.reset(task_id="hard")
         return self.grader()
 
     def _grade_for_current_task(self) -> float:
