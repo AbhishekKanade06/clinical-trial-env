@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 from openenv.core.env_server.interfaces import Environment
+from openenv.core.env_server.types import EnvironmentMetadata
 from pydantic import BaseModel, Field
 
 try:
@@ -173,6 +174,17 @@ class ClinicalTrialEnvironment(
     @property
     def state(self) -> ClinicalTrialState:
         return self._state
+
+    def get_metadata(self) -> EnvironmentMetadata:
+        return EnvironmentMetadata(
+            name="clinical_trial_env",
+            description=(
+                "Clinical trial patient screening environment with 3 deterministic tasks "
+                "and explicit graders for easy, medium, and hard difficulty."
+            ),
+            version="1.0.0",
+            author="Abhishek-CS221006",
+        )
 
     def grader(self) -> float:
         """Deterministically compare agent outputs against the current scenario ground truth."""
@@ -418,3 +430,18 @@ class ClinicalTrialEnv(ClinicalTrialEnvironment):
     """Compatibility alias for manifest entry points expecting env:ClinicalTrialEnv."""
 
     pass
+
+
+def grade_easy_screening() -> float:
+    """Module-level easy task grader for validator discovery."""
+    return ClinicalTrialEnv().grade_easy_screening()
+
+
+def grade_medium_ranking() -> float:
+    """Module-level medium task grader for validator discovery."""
+    return ClinicalTrialEnv().grade_medium_ranking()
+
+
+def grade_hard_exclusions() -> float:
+    """Module-level hard task grader for validator discovery."""
+    return ClinicalTrialEnv().grade_hard_exclusions()
